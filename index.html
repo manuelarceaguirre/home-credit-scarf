@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home Credit Default Risk Borrower Segmentation via SCARF</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --panel-2: #f8fbff;
+      --text: #0f1b2d;
+      --muted: #55657a;
+      --border: #d9e3f0;
+      --accent: #1f6feb;
+      --accent-2: #0b4fb2;
+      --ok: #1f8b4c;
+      --warn: #b7791f;
+      --danger: #b83232;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+      --kw: #93c5fd;
+      --fn: #fcd34d;
+      --str: #86efac;
+      --cm: #94a3b8;
+      --num: #fca5a5;
+      --shadow: 0 8px 30px rgba(16, 24, 40, 0.08);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220;
+        --panel: #111a2b;
+        --panel-2: #0f1728;
+        --text: #e6edf6;
+        --muted: #9fb0c8;
+        --border: #23324b;
+        --accent: #60a5fa;
+        --accent-2: #93c5fd;
+        --ok: #4ade80;
+        --warn: #fbbf24;
+        --danger: #f87171;
+        --code-bg: #020617;
+        --code-text: #dbeafe;
+        --kw: #93c5fd;
+        --fn: #fde68a;
+        --str: #86efac;
+        --cm: #94a3b8;
+        --num: #fca5a5;
+        --shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% -10%, rgba(31,111,235,0.14), transparent 40%),
+        radial-gradient(circle at 100% 0%, rgba(11,79,178,0.11), transparent 38%),
+        var(--bg);
+      line-height: 1.7;
+    }
+
+    .layout {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 290px minmax(0, 1fr);
+      gap: 24px;
+      padding: 24px;
+    }
+
+    aside {
+      position: sticky;
+      top: 18px;
+      align-self: start;
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+      max-height: calc(100vh - 36px);
+      overflow: auto;
+    }
+
+    aside h2 {
+      margin: 0 0 10px 0;
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    aside nav a {
+      display: block;
+      color: var(--text);
+      text-decoration: none;
+      border-left: 2px solid transparent;
+      padding: 6px 8px;
+      margin: 2px 0;
+      border-radius: 8px;
+      font-size: 0.93rem;
+    }
+
+    aside nav a:hover,
+    aside nav a.active {
+      border-left-color: var(--accent);
+      background: rgba(31, 111, 235, 0.1);
+      color: var(--accent-2);
+    }
+
+    main {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 34px;
+      box-shadow: var(--shadow);
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 22px;
+      margin-bottom: 26px;
+    }
+
+    h1, h2, h3 {
+      font-family: "Merriweather", "Iowan Old Style", Georgia, serif;
+      line-height: 1.3;
+      color: var(--text);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.7rem, 2.8vw, 2.5rem);
+      letter-spacing: -0.01em;
+    }
+
+    h2 {
+      margin-top: 30px;
+      margin-bottom: 12px;
+      font-size: clamp(1.2rem, 2vw, 1.6rem);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    h3 {
+      margin-top: 22px;
+      margin-bottom: 8px;
+      font-size: 1.08rem;
+    }
+
+    p { margin: 10px 0; }
+    .meta {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .badge-row {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .badge {
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.8rem;
+    }
+
+    .note, .callout {
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 12px;
+      background: var(--panel-2);
+      padding: 12px 14px;
+      margin: 14px 0;
+    }
+
+    .callout strong { color: var(--accent-2); }
+
+    ul, ol {
+      padding-left: 20px;
+      margin: 8px 0;
+    }
+
+    li { margin: 6px 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 18px;
+      font-size: 0.92rem;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    thead th {
+      background: linear-gradient(180deg, rgba(31,111,235,0.14), rgba(31,111,235,0.06));
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) {
+      background: rgba(127, 156, 200, 0.06);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--panel-2);
+      padding: 12px;
+    }
+
+    .metric {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 2px 0;
+    }
+
+    .metric-label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    pre {
+      margin: 12px 0 20px;
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid #1f2937;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+    }
+
+    code {
+      font-family: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 0.86rem;
+    }
+
+    pre code {
+      display: block;
+      padding: 14px;
+      background: var(--code-bg);
+      color: var(--code-text);
+      line-height: 1.5;
+      white-space: pre;
+    }
+
+    .kw { color: var(--kw); }
+    .fn { color: var(--fn); }
+    .str { color: var(--str); }
+    .cm { color: var(--cm); font-style: italic; }
+    .num { color: var(--num); }
+
+    .foot {
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 1050px) {
+      .layout {
+        grid-template-columns: 1fr;
+        padding: 12px;
+      }
+      aside {
+        position: relative;
+        top: 0;
+        max-height: none;
+      }
+      main {
+        padding: 18px;
+      }
+      .grid-2, .grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>Contents</h2>
+      <nav>
+        <a href="#top">Title & Header</a>
+        <a href="#exec">Executive Summary</a>
+        <a href="#intro">1. Introduction & Motivation</a>
+        <a href="#lit">2. Literature Review</a>
+        <a href="#data">3. Dataset & Problem Setup</a>
+        <a href="#pre">4. Methodology - Preprocessing</a>
+        <a href="#baseline">5. Methodology - Baseline</a>
+        <a href="#scarf">6. Methodology - SCARF</a>
+        <a href="#results">7. Results & Evaluation</a>
+        <a href="#limits">8. Assumptions & Limitations</a>
+        <a href="#honest">9. Honest Discussion</a>
+        <a href="#deploy">10. Deployment & Artifacts</a>
+        <a href="#repro">11. Reproducibility</a>
+        <a href="#conclusion">12. Conclusion</a>
+      </nav>
+    </aside>
+
+    <main>
+      <header id="top">
+        <h1>Home Credit Default Risk Borrower Segmentation via SCARF Contrastive Learning</h1>
+        <p class="meta"><strong>Team:</strong> Wade Chen, Manuel Antonio Arce Aguirre, Rita Luo, Qiqi Huang, Nick Dhaliwal, Yingqi Chen</p>
+        <p class="meta"><strong>Course:</strong> Machine Learning 1, University of Chicago, Winter 2025</p>
+        <p class="meta"><strong>Date:</strong> March 6, 2026</p>
+        <p class="meta"><strong>Document Type:</strong> Technical Companion Write-up for Executed Notebook</p>
+        <div class="badge-row">
+          <span class="badge">Dataset rows: 307,511</span>
+          <span class="badge">Raw columns: 122</span>
+          <span class="badge">Model split: 80/20 stratified</span>
+          <span class="badge">SCARF embedding: 64-d</span>
+          <span class="badge">PCA(90% var): 146 comps</span>
+        </div>
+      </header>
+
+      <section id="exec">
+        <h2>Executive Summary</h2>
+        <p>We built a leakage-safe, split-first unsupervised segmentation pipeline on the Home Credit Default Risk dataset and compared a classical baseline (PCA + clustering) against a self-supervised contrastive encoder (SCARF). We observed that PCA retained stronger linear predictive signal for a downstream logistic probe (AUC <strong>0.7449</strong> vs <strong>0.6426</strong> for SCARF), but SCARF produced substantially tighter clustering geometry and stronger risk stratification for segmentation: test silhouette <strong>0.3855</strong> vs <strong>0.1797</strong>, and IV gains at shared cluster counts for <code>k &ge; 4</code>. We interpreted this as a meaningful tradeoff between linear separability and geometry-oriented segment structure. We concluded that SCARF is valuable for borrower segmentation use cases where coherent latent islands and risk-layered cluster profiles matter most, while PCA remains a strong baseline when linear discriminative performance is the priority.</p>
+      </section>
+
+      <section id="intro">
+        <h2>1. Introduction & Motivation</h2>
+        <p>We framed this project around a practical gap in credit analytics: supervised default prediction and unsupervised borrower segmentation solve related but different business problems. In production credit operations, we rarely need only a binary score. We often need borrower archetypes that can support policy design, pricing, intervention sequencing, collection strategy, and portfolio stress testing. In other words, segmentation is not a side task; it is a decision interface.</p>
+        <p>We recognized that high-dimensional tabular credit data is noisy, partially missing, semantically mixed, and not always linearly structured. If we rely only on linear dimensionality reduction followed by centroid clustering, we may obtain broad and overlapping partitions that are mathematically valid but operationally weak. Borrowers can occupy non-linear manifolds where local neighborhoods matter more than global variance directions. That mismatch motivated us to test representation learning as a preprocessing stage for unsupervised clustering.</p>
+        <p>Our central hypothesis was that self-supervised contrastive learning can build a latent space with better local geometry than PCA in this context. We expected that if we train an encoder to keep semantically perturbed views of the same borrower close while pushing different borrowers apart, we may uncover cleaner latent islands. Those islands should translate into stronger silhouette behavior and more distinct risk strata across clusters, even if linear probe performance is not maximized.</p>
+        <div class="callout"><strong>Hypothesis:</strong> We expected SCARF embeddings to improve unsupervised segmentation quality (geometry + risk separation), while acknowledging that linear discriminative metrics could move in either direction.</div>
+      </section>
+
+      <section id="lit">
+        <h2>2. Literature Review</h2>
+        <h3>SCARF (ICLR 2022)</h3>
+        <p>We selected SCARF because it is one of the most direct and practical contrastive frameworks for tabular data. SCARF generates two views by feature corruption rather than image-style augmentations and optimizes an InfoNCE/NT-Xent objective so that positive pairs (same sample under corruption) align while other batch samples act as negatives. For our setting, this was a natural fit because our table has mixed data types, many missing values, and large row count, and we needed a method that is conceptually simple enough to implement from scratch in PyTorch.</p>
+
+        <h3>ReConTab (arXiv 2023)</h3>
+        <p>We treated ReConTab as evidence that contrastive objectives can be made robust for tabular domains through corruption-aware objectives and stronger augmentation design. It reinforced our belief that representation learning for tabular data is no longer niche and that non-linear latent spaces can be materially better than purely linear transforms in segmentation-oriented workflows.</p>
+
+        <h3>TCCL (arXiv 2025)</h3>
+        <p>We used TCCL as recent context for the direction of the field: contrastive tabular methods continue to push representation transfer, clustering quality, and downstream adaptation. Even without implementing TCCL in this project, we used it to situate our work in a modern sequence and to justify why we prioritized SSL architecture and corruption strategy instead of stopping at PCA.</p>
+
+        <h3>Why We Chose SCARF Over Other Alternatives</h3>
+        <ul>
+          <li>We chose SCARF over VAEs because VAEs impose an explicit generative bottleneck and often require careful likelihood assumptions that may be brittle on heterogeneous credit tables.</li>
+          <li>We chose SCARF over deep clustering hybrids in this phase because we wanted a clean representation-learning stage before clustering, not a tightly coupled joint objective that is harder to diagnose.</li>
+          <li>We chose SCARF over graph-based methods because our borrower table lacked a native, trustworthy relational graph; constructing one would add major modeling assumptions and possible leakage pathways.</li>
+          <li>We chose SCARF over heavier transformer pipelines because we prioritized reproducibility and clear implementation logic under CPU constraints.</li>
+        </ul>
+      </section>
+
+      <section id="data">
+        <h2>3. Dataset & Problem Setup</h2>
+        <p>We used the Kaggle Home Credit Default Risk training table (<code>application_train.csv</code>). The raw matrix contains <strong>307,511 rows</strong> and <strong>122 columns</strong>. Of these 122 columns, one is <code>TARGET</code>, one is borrower ID (<code>SK_ID_CURR</code>), and we modeled the remaining <strong>120 features</strong> after immediate split-first separation. We observed an imbalanced target with default rate approximately <strong>8.07%</strong> in both train and test due to stratified splitting.</p>
+
+        <div class="grid-3">
+          <div class="card">
+            <div class="metric-label">Rows</div>
+            <div class="metric">307,511</div>
+          </div>
+          <div class="card">
+            <div class="metric-label">Raw Columns</div>
+            <div class="metric">122</div>
+          </div>
+          <div class="card">
+            <div class="metric-label">Default Rate</div>
+            <div class="metric">8.07%</div>
+          </div>
+        </div>
+
+        <p>We handled mixed feature types explicitly. Before dropping target and ID, dtype counts were 65 float, 41 int, and 16 string columns. After removing <code>TARGET</code> and <code>SK_ID_CURR</code>, we treated the feature space as approximately <strong>104 numeric</strong> and <strong>16 categorical</strong>. We then separated one ordinal field (<code>NAME_EDUCATION_TYPE</code>) from nominal categoricals.</p>
+        <p>Missingness was substantial and non-uniform across columns. We set a train-only threshold of <strong>&gt;5% missingness</strong> to create explicit binary missing indicators, which produced <strong>57 indicator features</strong>. We used this threshold to preserve missingness as signal while avoiding indicator explosion on low-missing columns. This decision let us model both observed values and missingness mechanisms in parallel.</p>
+
+        <h3>Key Split Statistics</h3>
+        <ul>
+          <li>Raw feature matrix before preprocessing: <code>(307511, 120)</code></li>
+          <li>Train rows: <code>246008</code>, Test rows: <code>61503</code></li>
+          <li>Train default rate: <code>0.0807</code>, Test default rate: <code>0.0807</code></li>
+          <li>Post-processing matrix shape: Train <code>(246008, 282)</code>, Test <code>(61503, 282)</code></li>
+          <li>Residual missing values after preprocessing: <code>0</code> in both splits</li>
+        </ul>
+      </section>
+
+      <section id="pre">
+        <h2>4. Methodology - Preprocessing Pipeline</h2>
+        <h3>Split-First Design (Leakage Prevention)</h3>
+        <p>We separated <code>TARGET</code> and borrower ID immediately, then performed an 80/20 stratified split before any imputation, scaling, encoding, or dimensionality reduction. We fit every transform on train only and applied it to test. This design is essential in financial risk modeling because tiny leakage channels can significantly inflate evaluation confidence.</p>
+
+        <pre><code><span class="cm"># Split immediately after separating TARGET and ID</span>
+X_train_raw_df, X_test_raw_df, target_train, target_test = <span class="fn">train_test_split</span>(
+    X_raw_df, target_series, test_size=<span class="num">0.2</span>, random_state=SEED, stratify=target_series
+)
+</code></pre>
+
+        <h3><code>DAYS_EMPLOYED</code> Sentinel Anomaly (365243)</h3>
+        <p>We corrected a critical anomaly before numeric imputation: <code>DAYS_EMPLOYED = 365243</code>, a known sentinel placeholder for unknown employment duration in this dataset. This value appears in roughly 18% of rows in common Home Credit analyses, and if we leave it untouched it contaminates medians, expands variance unnaturally, and destabilizes standardization. StandardScaler would otherwise treat sentinel rows as extreme yet meaningful values, distorting distance geometry.</p>
+
+        <pre><code><span class="cm"># Fix sentinel before imputation/scaling</span>
+<span class="kw">if</span> <span class="str">"DAYS_EMPLOYED"</span> <span class="kw">in</span> X_train_proc.columns:
+    X_train_proc.loc[X_train_proc[<span class="str">"DAYS_EMPLOYED"</span>] == <span class="num">365243</span>, <span class="str">"DAYS_EMPLOYED"</span>] = np.nan
+    X_test_proc.loc[X_test_proc[<span class="str">"DAYS_EMPLOYED"</span>] == <span class="num">365243</span>, <span class="str">"DAYS_EMPLOYED"</span>] = np.nan
+</code></pre>
+
+        <h3>Numeric Imputation: Train Median</h3>
+        <p>We imputed numeric columns with train medians, not means. Financial variables in this dataset are heavy-tailed and skewed (credit amounts, annuities, incomes), and medians are more robust to outliers. We also persisted imputation dictionaries for inference consistency.</p>
+
+        <h3>Missingness Indicators (&gt;5%)</h3>
+        <p>We created <code>_MISSING</code> binary flags for columns whose train missing ratio exceeded 5%. We did this for two reasons: (1) missingness can encode process information (documentation quality, underwriting friction, informal labor patterns), and (2) pure imputation can erase useful absence patterns. With 57 such indicators, we preserved this signal explicitly.</p>
+
+        <h3>Categorical Handling: Ordinal vs Nominal</h3>
+        <p>We separated ordinal and nominal categories. For <code>NAME_EDUCATION_TYPE</code>, we defined an explicit order from lower secondary to academic degree, mapped to prefixed ordered strings, and applied LabelEncoder. For nominal columns, we used <code>pd.Categorical</code> with train categories and then one-hot encoded via <code>get_dummies(drop_first=True)</code>.</p>
+
+        <h3>Train/Test One-Hot Alignment</h3>
+        <p>We enforced category alignment using train-fitted category sets before dummy expansion, and then we reindexed test columns to train schema. This guaranteed identical dummy bases and identical dropped reference categories across splits.</p>
+
+        <pre><code><span class="kw">for</span> col <span class="kw">in</span> nominal_cols:
+    train_categories = X_train_proc[col].unique().tolist()
+    X_train_proc[col] = pd.Categorical(X_train_proc[col], categories=sorted(train_categories))
+    X_test_proc[col] = pd.Categorical(X_test_proc[col], categories=sorted(train_categories))
+
+X_train_model_df = pd.get_dummies(X_train_proc, columns=nominal_cols, drop_first=<span class="kw">True</span>, dtype=np.uint8)
+X_test_model_df = pd.get_dummies(X_test_proc, columns=nominal_cols, drop_first=<span class="kw">True</span>, dtype=np.uint8)
+X_test_model_df = X_test_model_df.reindex(columns=X_train_model_df.columns, fill_value=<span class="num">0</span>)
+</code></pre>
+
+        <h3>StandardScaler Fit on Train Only</h3>
+        <p>We standardized only after all imputation and encoding. We fit <code>StandardScaler</code> on train and transformed both splits. Final shapes were <code>(246008, 282)</code> train and <code>(61503, 282)</code> test with zero missing residuals.</p>
+
+        <h3>Bundling <code>_MISSING</code> Indicators with Parent Features for SCARF Corruption</h3>
+        <p>A key methodological choice was grouping missingness flags with their parent variables in corruption logic. If we corrupt a parent without its missing flag (or vice versa), we can create semantically inconsistent synthetic views. We therefore bundled parent/indicator indices into shared corruption groups and treated one-hot category blocks atomically.</p>
+      </section>
+
+      <section id="baseline">
+        <h2>5. Methodology - Baseline (PCA + Classical Clustering)</h2>
+        <p>Our baseline pipeline used train-fit PCA, K-Means model selection, Ward hierarchical clustering, and DBSCAN density clustering, all under leakage-safe split discipline.</p>
+
+        <h3>PCA at 90% Variance</h3>
+        <p>We fit PCA on train only, computed cumulative explained variance, and selected components to exceed 90% train variance. This required <strong>146 components</strong>, yielding train shape <code>(246008, 146)</code> and test shape <code>(61503, 146)</code>.</p>
+
+        <h3>K-Means Selection (k=2..10)</h3>
+        <p>We evaluated silhouette on train for <code>k = 2..10</code>, chose <strong>k=2</strong> for PCA, and fit centroids on train before test prediction.</p>
+
+        <h3>Hierarchical Clustering (Ward)</h3>
+        <p>We generated a Ward dendrogram on a 5,000-row test sample for interpretive structure checks. We reused this same sample later for SCARF-side comparability.</p>
+
+        <h3>DBSCAN with k-Distance Elbow</h3>
+        <p>We tuned <code>eps</code> from 12-nearest-neighbor distance curves using KneeLocator maximum curvature. On a 50,000-row test sample we obtained PCA <code>eps=26.2733</code>, <code>17</code> clusters, and noise ratio <code>0.0023</code> (113 noise points).</p>
+      </section>
+
+      <section id="scarf">
+        <h2>6. Methodology - SCARF Contrastive Encoder</h2>
+        <h3>Architecture</h3>
+        <p>We implemented SCARF from scratch in PyTorch. The encoder MLP was <code>input &rarr; 256 &rarr; 128 &rarr; 64</code> with BatchNorm, ReLU, and Dropout(0.1). The projection head was <code>64 &rarr; 64 &rarr; 64</code>. We trained on train split only, never using test rows during representation learning.</p>
+
+        <h3>Corruption Strategy</h3>
+        <p>We used corruption rate <strong>0.6</strong> at logical-feature level. For each sampled logical feature, we swapped values from a randomly selected donor row. We treated one-hot groups as atomic units so each corrupted categorical block remained valid.</p>
+
+        <pre><code><span class="kw">def</span> <span class="fn">__getitem__</span>(self, idx):
+    x = self.data[idx].clone()
+    x_corrupt = x.clone()
+    perm = torch.randperm(self.n_logical)[: self.n_corrupt]
+
+    cols_to_corrupt, donors_for_cols = [], []
+    <span class="kw">for</span> p <span class="kw">in</span> perm.tolist():
+        donor = torch.randint(<span class="num">0</span>, self.n_samples, (<span class="num">1</span>,)).item()
+        <span class="kw">if</span> p &lt; len(self.numeric_indices):
+            cols_to_corrupt.append(self.numeric_indices[p])
+            donors_for_cols.append(donor)
+        <span class="kw">else</span>:
+            group_idx = p - len(self.numeric_indices)
+            <span class="kw">for</span> c <span class="kw">in</span> self.cat_groups[group_idx]:
+                cols_to_corrupt.append(c)
+                donors_for_cols.append(donor)
+
+    <span class="kw">if</span> cols_to_corrupt:
+        col_idx = torch.tensor(cols_to_corrupt, dtype=torch.long)
+        donor_idx = torch.tensor(donors_for_cols, dtype=torch.long)
+        x_corrupt[col_idx] = self.data[donor_idx, col_idx]
+
+    <span class="kw">return</span> x, x_corrupt
+</code></pre>
+
+        <h3>NT-Xent / InfoNCE Objective</h3>
+        <p>We used temperature <code>0.5</code> and computed normalized similarities on projection outputs. Positive pairs were original and corrupted views of the same row; negatives were all other samples in the batch.</p>
+
+        <pre><code><span class="kw">def</span> <span class="fn">forward</span>(self, z_i, z_j):
+    batch_size = z_i.shape[<span class="num">0</span>]
+    z_i = F.normalize(z_i, dim=<span class="num">1</span>)
+    z_j = F.normalize(z_j, dim=<span class="num">1</span>)
+
+    z = torch.cat([z_i, z_j], dim=<span class="num">0</span>)
+    sim = torch.matmul(z, z.T) / self.temperature
+
+    eye_mask = torch.eye(<span class="num">2</span> * batch_size, device=sim.device, dtype=torch.bool)
+    sim = sim.masked_fill(eye_mask, -<span class="num">1e9</span>)
+
+    pos = torch.cat([torch.diag(sim, batch_size), torch.diag(sim, -batch_size)], dim=<span class="num">0</span>)
+    denom = torch.logsumexp(sim, dim=<span class="num">1</span>)
+    loss = -pos + denom
+    <span class="kw">return</span> loss.mean()
+</code></pre>
+
+        <h3>Training Details</h3>
+        <ul>
+          <li>Epochs: <strong>30</strong></li>
+          <li>Batch size: <strong>512</strong></li>
+          <li>Optimizer: Adam (<code>lr=1e-3</code>, <code>weight_decay=1e-5</code>)</li>
+          <li>Scheduler: cosine annealing across epochs</li>
+          <li>Device in execution: CPU</li>
+        </ul>
+        <p>Loss decreased from <code>5.7723</code> at epoch 1 to <code>5.5900</code> by epoch 30, indicating stable optimization.</p>
+
+        <h3>Embedding Extraction and Euclidean K-Means Justification</h3>
+        <p>We extracted raw encoder outputs (not unit-normalized) and intentionally clustered with Euclidean K-Means. Our rationale was that NT-Xent applies normalization inside projection space, while encoder norms may still carry intensity information (for example, more extreme borrower profiles). We explicitly chose not to discard this magnitude signal.</p>
+
+        <pre><code><span class="kw">@torch.no_grad()</span>
+<span class="kw">def</span> <span class="fn">extract_embeddings</span>(encoder, X, batch_size=<span class="num">2048</span>):
+    encoder.eval()
+    dataset = TensorDataset(torch.tensor(X, dtype=torch.float32))
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=<span class="kw">False</span>)
+
+    all_emb = []
+    <span class="kw">for</span> (batch,) <span class="kw">in</span> loader:
+        emb = encoder(batch.to(device, non_blocking=<span class="kw">True</span>))
+        <span class="cm"># We keep raw encoder outputs (unnormalized) intentionally.</span>
+        all_emb.append(emb.cpu().numpy())
+    <span class="kw">return</span> np.vstack(all_emb)
+</code></pre>
+      </section>
+
+      <section id="results">
+        <h2>7. Results & Evaluation</h2>
+        <p>We report all metrics on held-out test data, with train-only fitting for preprocessing and model training stages. We present the exact values from the executed notebook outputs below.</p>
+
+        <h3>Baseline vs SCARF Summary (All Reported Metrics)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Baseline PCA</th>
+              <th>SCARF Embedding</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Linear probe AUC (80/20 holdout TEST)</td>
+              <td>0.744918</td>
+              <td>0.642574</td>
+            </tr>
+            <tr>
+              <td>Silhouette (TEST, chosen k)</td>
+              <td>0.179730</td>
+              <td>0.385522</td>
+            </tr>
+            <tr>
+              <td>Silhouette bootstrap mean (TEST, 10x subsamples)</td>
+              <td>0.179736</td>
+              <td>0.385417</td>
+            </tr>
+            <tr>
+              <td>Silhouette bootstrap std (TEST, 10x subsamples)</td>
+              <td>0.000181</td>
+              <td>0.000477</td>
+            </tr>
+            <tr>
+              <td>Weighted Information Value at chosen k (TEST)</td>
+              <td>0.025499</td>
+              <td>0.062542</td>
+            </tr>
+            <tr>
+              <td>Mean IV across shared k={2,4,6,8} (TEST)</td>
+              <td>0.040943</td>
+              <td>0.047631</td>
+            </tr>
+            <tr>
+              <td>Chosen k from train silhouette</td>
+              <td>2</td>
+              <td>9</td>
+            </tr>
+            <tr>
+              <td>DBSCAN noise ratio (TEST sample)</td>
+              <td>0.002260</td>
+              <td>0.002640</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Linear Probe AUC: PCA 0.745 vs SCARF 0.643</h3>
+        <p>We observed that PCA preserved substantially more linear separability for default prediction under a standardized logistic probe. This result is important and we treated it as a central finding rather than a footnote. In this project, SCARF was not superior on linear discriminative signal.</p>
+
+        <h3>Silhouette: PCA 0.180 vs SCARF 0.386</h3>
+        <p>In contrast, SCARF nearly doubled test silhouette compared to PCA. This indicates much tighter and more separated clusters in embedding space. Because our project objective emphasized segmentation quality, this geometric gain was highly relevant.</p>
+
+        <h3>Bootstrap Confidence Summary (10x Subsamples, Shared Seed Protocol)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Space</th>
+              <th>Mean Silhouette</th>
+              <th>Std Silhouette</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>PCA</td><td>0.179736</td><td>0.000181</td></tr>
+            <tr><td>SCARF</td><td>0.385417</td><td>0.000477</td></tr>
+          </tbody>
+        </table>
+        <p>We used 10 repeated 50k-row test subsamples and synchronized seeds for fair variance comparison. Both methods showed low sampling variability, and the silhouette gap remained large.</p>
+
+        <h3>Information Value at Shared k</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>k</th>
+              <th>IV (PCA)</th>
+              <th>IV (SCARF)</th>
+              <th>Winner</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>2</td><td>0.025499</td><td>0.024636</td><td>PCA (slight)</td></tr>
+            <tr><td>4</td><td>0.032163</td><td>0.047587</td><td>SCARF</td></tr>
+            <tr><td>6</td><td>0.053170</td><td>0.057152</td><td>SCARF</td></tr>
+            <tr><td>8</td><td>0.052941</td><td>0.061148</td><td>SCARF</td></tr>
+          </tbody>
+        </table>
+        <p>We found that SCARF dominated IV once we moved beyond <code>k=2</code>. This supported our claim that SCARF organizes risk structure better as segmentation granularity increases.</p>
+
+        <h3>DBSCAN Comparison</h3>
+        <ul>
+          <li>PCA: <code>eps=26.2733</code>, 17 clusters, noise ratio <code>0.0023</code> (113/50000)</li>
+          <li>SCARF: <code>eps=4.6790</code>, 2 clusters, noise ratio <code>0.0026</code> (132/50000)</li>
+        </ul>
+        <p>Noise fractions were similar (about 0.2%-0.3%), which suggested both spaces had comparably tiny outlier mass under tuned eps. The key distinction was cluster geometry and structure rather than sheer outlier proportion.</p>
+
+        <h3>Cluster Size Distributions</h3>
+        <div class="grid-2">
+          <div>
+            <table>
+              <thead>
+                <tr><th colspan="4">PCA K-Means (Test, k=2)</th></tr>
+                <tr><th>Cluster</th><th>N</th><th>Pct_of_Total</th><th>Default_Rate</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>0</td><td>32073</td><td>0.521487</td><td>0.092009</td></tr>
+                <tr><td>1</td><td>29430</td><td>0.478513</td><td>0.068434</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <table>
+              <thead>
+                <tr><th colspan="4">SCARF K-Means (Test, k=9)</th></tr>
+                <tr><th>Cluster</th><th>N</th><th>Pct_of_Total</th><th>Default_Rate</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>0</td><td>21323</td><td>0.346699</td><td>0.096047</td></tr>
+                <tr><td>1</td><td>3405</td><td>0.055363</td><td>0.046696</td></tr>
+                <tr><td>2</td><td>7162</td><td>0.116450</td><td>0.063669</td></tr>
+                <tr><td>3</td><td>4498</td><td>0.073135</td><td>0.111383</td></tr>
+                <tr><td>4</td><td>2940</td><td>0.047803</td><td>0.080612</td></tr>
+                <tr><td>5</td><td>11289</td><td>0.183552</td><td>0.065905</td></tr>
+                <tr><td>6</td><td>4911</td><td>0.079850</td><td>0.059662</td></tr>
+                <tr><td>7</td><td>2837</td><td>0.046128</td><td>0.084949</td></tr>
+                <tr><td>8</td><td>3138</td><td>0.051022</td><td>0.091141</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <h3>SCARF Cluster Profiling and Risk Patterns</h3>
+        <p>We profiled SCARF clusters on interpretable financial and demographic aggregates. We found clear risk separation: cluster 3 had the highest observed default rate (<code>0.1114</code>), cluster 0 was also elevated (<code>0.0960</code>), and cluster 1 was notably low-risk (<code>0.0467</code>). We also observed coherent shifts in external score means and borrower age/employment profiles, consistent with non-random segmentation.</p>
+
+        <h3>Train/Test Stability of SCARF Clusters</h3>
+        <p>Using train-fitted centroids, we compared train and test default rates per SCARF cluster. Absolute default-rate shifts were generally small (range <code>0.0002</code> to <code>0.0069</code>), which indicated decent out-of-sample stability for risk ranking across clusters.</p>
+      </section>
+
+      <section id="limits">
+        <h2>8. Assumptions & Limitations</h2>
+        <p>We explicitly acknowledge the following assumptions and constraints in our pipeline and interpretation:</p>
+        <ol>
+          <li>We assumed IID sampling across borrower rows, even though real portfolios can include temporal drift and policy shifts.</li>
+          <li>We assumed median/mode imputation was acceptable under approximately missing-at-random behavior.</li>
+          <li>We assumed <code>DAYS_EMPLOYED=365243</code> was a placeholder anomaly rather than a meaningful encoded state.</li>
+          <li>We assumed corruption rate <code>0.6</code> was suitable without dedicated tuning.</li>
+          <li>We assumed NT-Xent temperature <code>0.5</code> was reasonable without sweep.</li>
+          <li>We assumed 30 epochs were enough for useful convergence under our architecture and hardware budget.</li>
+          <li>We assumed 64-dimensional embeddings were expressive enough for segmentation.</li>
+          <li>We assumed Euclidean distance on unnormalized encoder outputs was a valid clustering geometry choice.</li>
+          <li>We assumed a 90% PCA variance threshold was an acceptable baseline convention, despite arbitrariness.</li>
+          <li>We assumed Ward linkage was informative even though it implicitly favors compact, roughly spherical structure.</li>
+          <li>We relied on one primary dataset and did not perform external-dataset validation.</li>
+          <li>We did not run comprehensive SCARF hyperparameter tuning (architecture, depth, width, augmentation schedule).</li>
+          <li>We used bootstrap silhouette with only <code>n=10</code> subsamples, which is limited for high-precision uncertainty quantification.</li>
+          <li>We evaluated random train/test stability but did not perform out-of-time split validation.</li>
+          <li>We treated downstream linear probe AUC as a useful diagnostic but not the training objective.</li>
+        </ol>
+      </section>
+
+      <section id="honest">
+        <h2>9. Honest Discussion of Results</h2>
+        <p>We are explicit about the mixed outcome. PCA won clearly on linear probe AUC. If our only goal were to keep default signal linearly separable for a logistic model, PCA would be the stronger choice in this experiment. We do not reinterpret that away.</p>
+        <p>At the same time, SCARF won decisively on segmentation geometry and risk stratification at most shared k values. Test silhouette improved from 0.1797 to 0.3855, and IV became stronger for <code>k=4,6,8</code>. We therefore interpret SCARF as producing latent structure that is better aligned with unsupervised cluster quality, even if it is less linearly convenient.</p>
+        <p>This tradeoff is coherent with objective design. SCARF optimizes neighborhood structure through contrastive invariance under corruption, not supervised separation of the default label. PCA maximizes explained variance in linear subspace, which often aligns better with linear probes. These are different optimization targets, so divergence in metrics is expected.</p>
+        <p>We believe SCARF AUC could improve with additional work: supervised fine-tuning of encoder, longer training, larger networks, alternative projection heads, and hybrid loss terms that blend contrastive and supervised objectives. We did not run those extensions in this project, so we keep this as future work rather than claiming performance we did not measure.</p>
+      </section>
+
+      <section id="deploy">
+        <h2>10. Deployment & Artifacts</h2>
+        <p>We exported nine deployment artifacts and saved them under <code>artifacts/</code>. These are sufficient to reproduce preprocessing, encoding, and cluster assignment for new borrowers.</p>
+
+        <table>
+          <thead>
+            <tr><th>Artifact</th><th>Description</th><th>Role in Inference</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>scarf_encoder.pt</code></td><td>Trained PyTorch encoder weights</td><td>Maps scaled feature vectors to 64-d embeddings</td></tr>
+            <tr><td><code>standard_scaler.joblib</code></td><td>Train-fitted StandardScaler</td><td>Applies exact train-time feature normalization</td></tr>
+            <tr><td><code>pca_model.joblib</code></td><td>Train-fitted PCA baseline model</td><td>Optional baseline projection path</td></tr>
+            <tr><td><code>numeric_impute_values.joblib</code></td><td>Per-column train medians</td><td>Numeric missing-value imputation</td></tr>
+            <tr><td><code>categorical_impute_values.joblib</code></td><td>Per-column train modes</td><td>Categorical missing-value imputation</td></tr>
+            <tr><td><code>label_encoders.joblib</code></td><td>Ordinal encoders (education mapping)</td><td>Consistent ordinal category encoding</td></tr>
+            <tr><td><code>feature_columns.joblib</code></td><td>Final train feature schema</td><td>Ensures one-hot column order/alignment</td></tr>
+            <tr><td><code>cat_group_indices.joblib</code></td><td>Categorical/missingness groups for SCARF</td><td>Preserves semantic grouping in corruption/retraining</td></tr>
+            <tr><td><code>scarf_kmeans.joblib</code></td><td>Train-fitted K-Means model in SCARF space</td><td>Assigns borrower segment IDs from embeddings</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Inference Workflow on New Borrowers</h3>
+        <ol>
+          <li>We load all artifacts and raw borrower records.</li>
+          <li>We apply the exact preprocessing sequence: sentinel fix, missing indicators, train dictionary imputations, ordinal encoding, nominal one-hot, and schema alignment to <code>feature_columns</code>.</li>
+          <li>We transform with <code>standard_scaler</code>.</li>
+          <li>We encode rows with the SCARF encoder to obtain 64-d embeddings.</li>
+          <li>We apply <code>scarf_kmeans</code> to assign segment labels.</li>
+          <li>We map segment IDs to risk-level interpretation using cluster profile tables (default rate and feature means).</li>
+        </ol>
+
+        <h3>Key Utility Function for Risk Separation</h3>
+        <pre><code><span class="kw">def</span> <span class="fn">weighted_information_value</span>(labels, target):
+    eval_df = pd.DataFrame({<span class="str">"cluster"</span>: labels, <span class="str">"target"</span>: target})
+    total_good = int((eval_df[<span class="str">"target"</span>] == <span class="num">0</span>).sum())
+    total_bad = int((eval_df[<span class="str">"target"</span>] == <span class="num">1</span>).sum())
+    eps = <span class="num">1e-9</span>
+
+    iv = <span class="num">0.0</span>
+    <span class="kw">for</span> cluster_id, grp <span class="kw">in</span> eval_df.groupby(<span class="str">"cluster"</span>):
+        good_i = int((grp[<span class="str">"target"</span>] == <span class="num">0</span>).sum())
+        bad_i = int((grp[<span class="str">"target"</span>] == <span class="num">1</span>).sum())
+        pct_good = max(good_i / total_good, eps)
+        pct_bad = max(bad_i / total_bad, eps)
+        iv += (pct_good - pct_bad) * np.log(pct_good / pct_bad)
+
+    <span class="kw">return</span> float(iv)
+</code></pre>
+      </section>
+
+      <section id="repro">
+        <h2>11. Reproducibility</h2>
+        <p>We designed this project for deterministic repeatability as much as possible under CPU execution.</p>
+        <ul>
+          <li>We set <code>SEED=42</code> in NumPy, Python <code>random</code>, and PyTorch, and configured deterministic cuDNN flags.</li>
+          <li>We used train/test split with <code>random_state=42</code> and stratification on target.</li>
+          <li>We used Python 3.11 with PyTorch, scikit-learn, pandas, NumPy, SciPy, seaborn, matplotlib, UMAP, and kneed.</li>
+          <li>We sourced data from Kaggle Home Credit Default Risk competition (<code>application_train.csv</code>).</li>
+          <li>We ran on CPU in the captured execution and observed roughly 15 minutes end-to-end runtime.</li>
+        </ul>
+        <p>Because we fixed random seeds and persisted fitted artifacts, we can reproduce preprocessing schema, embedding extraction, and cluster assignment behavior for new data with high fidelity.</p>
+      </section>
+
+      <section id="conclusion">
+        <h2>12. Conclusion</h2>
+        <p>We contributed a full leakage-safe segmentation pipeline that compares a strong classical baseline against a custom SCARF implementation for large-scale credit tabular data. We handled critical data issues (sentinel anomalies, missingness signal retention, split-consistent encoding), built semantically valid corruption for one-hot groups, and evaluated with geometry and risk-stratification metrics on held-out data.</p>
+        <p>Our final conclusion is nuanced: SCARF produced geometrically superior embeddings for borrower segmentation and stronger multi-cluster risk separation, while PCA remained stronger for linear discriminative default prediction. We view this not as contradiction but as objective mismatch across methods. If our downstream task is segmentation quality and cluster interpretability, SCARF is compelling; if our immediate objective is linear probe performance, PCA is still a robust baseline.</p>
+        <p>For future work, we would run broader hyperparameter sweeps, evaluate out-of-time stability, test additional tabular SSL encoders, and add supervised fine-tuning heads to improve AUC without sacrificing cluster geometry.</p>
+      </section>
+
+      <section>
+        <h2>References</h2>
+        <ol>
+          <li>Bahri, D., Jiang, H., Tay, Y., et al. (2022). <em>SCARF: Self-Supervised Contrastive Learning using Random Feature Corruption</em>. ICLR 2022.</li>
+          <li>ReConTab authors (2023). <em>ReConTab</em>. arXiv preprint.</li>
+          <li>TCCL authors (2025). <em>TCCL</em>. arXiv preprint.</li>
+          <li>Kaggle. <em>Home Credit Default Risk</em> competition dataset.</li>
+        </ol>
+      </section>
+
+      <div class="foot">
+        We generated this technical companion directly from the full notebook source logic and executed outputs. We reported all available quantitative values and kept limitations explicit to avoid overclaiming.
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const links = Array.from(document.querySelectorAll('aside nav a'));
+    const sections = links
+      .map(a => document.querySelector(a.getAttribute('href')))
+      .filter(Boolean);
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const id = '#' + entry.target.id;
+        const link = links.find(a => a.getAttribute('href') === id);
+        if (!link) return;
+        if (entry.isIntersecting) {
+          links.forEach(l => l.classList.remove('active'));
+          link.classList.add('active');
+        }
+      });
+    }, { threshold: 0.3 });
+
+    sections.forEach(sec => observer.observe(sec));
+  </script>
+</body>
+</html>
